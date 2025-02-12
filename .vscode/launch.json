@@ -1,0 +1,18 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "bun",
+      "internalConsoleOptions": "neverOpen",
+      "request": "launch",
+      "name": "Debug Book Kin Server",
+      "program": "${workspaceFolder}/src/server.ts",
+      "args": ["--watch"],
+      "cwd": "${workspaceFolder}",
+      "stopOnEntry": false,
+      "watchMode": true,
+      "runtime": "bun",
+      "runtimeArgs": ["--inspect-brk"]
+    }
+  ]
+}
