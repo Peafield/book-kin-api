@@ -16,6 +16,7 @@
 		"typescript": "^5.0.0"
 	},
 	"dependencies": {
+		"@atproto/oauth-client-node": "^0.2.10",
 		"dotenv": "^16.4.7",
 		"express": "^4.21.2",
 		"winston": "^3.17.0"
