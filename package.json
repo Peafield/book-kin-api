@@ -7,8 +7,10 @@
 		"debug": "bun run --inspect-brk ./src/server.ts --watch"
 	},
 	"devDependencies": {
+		"@biomejs/biome": "1.9.4",
 		"@types/bun": "latest",
-		"@types/express": "^5.0.0"
+		"@types/express": "^5.0.0",
+		"lefthook": "^1.10.10"
 	},
 	"peerDependencies": {
 		"typescript": "^5.0.0"
