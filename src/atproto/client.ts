@@ -1,34 +1,5 @@
-import type { SimpleStore, Value } from "@atproto-labs/simple-store";
-import {
-	NodeOAuthClient,
-	type NodeSavedSession,
-	type NodeSavedState,
-} from "@atproto/oauth-client-node";
-
-// Helper function to statisfy store creation
-export function createMemoryStore<V extends Value>(): SimpleStore<string, V> {
-	const store: Record<string, V> = {};
-
-	return {
-		async get(key: string) {
-			return store[key];
-		},
-		async set(key: string, value: V) {
-			store[key] = value;
-		},
-		async del(key: string) {
-			delete store[key];
-		},
-		async clear() {
-			for (const key of Object.keys(store)) {
-				delete store[key];
-			}
-		},
-	};
-}
-
-const stateStore = createMemoryStore<NodeSavedState>();
-const sessionStore = createMemoryStore<NodeSavedSession>();
+import { NodeOAuthClient } from "@atproto/oauth-client-node";
+import { SessionStore, StateStore } from "./storage";
 
 export const createClient = async () => {
 	const publicUrl = process.env.PUBLIC_URL;
@@ -51,7 +22,7 @@ export const createClient = async () => {
 			token_endpoint_auth_method: "none",
 			dpop_bound_access_tokens: true,
 		},
-		stateStore,
-		sessionStore,
+		stateStore: new StateStore(),
+		sessionStore: new SessionStore(),
 	});
 };
