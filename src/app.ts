@@ -16,6 +16,8 @@ export class Server {
 			cors({
 				origin: ["http://localhost:8081"],
 				credentials: true,
+				methods: ["GET", "POST"],
+				allowedHeaders: ["Content-Type", "Authorization"],
 			}),
 		);
 		this.configureMiddleware();
