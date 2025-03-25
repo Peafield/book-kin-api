@@ -3,8 +3,8 @@ import { callback, login } from "../controllers/auth.controller";
 
 const router = Router();
 
-router.get("/login", login);
+router.post("/login", login);
 
-router.get("/callback", callback);
+router.get("/oauth/callback", callback);
 
 export default router;
