@@ -9,6 +9,7 @@ export class Server {
 	private app: Express;
 	private port: string | number;
 
+	// TODO: ADD RATE LIMITER!
 	constructor() {
 		this.app = express();
 		this.port = process.env.PORT || 8080;
