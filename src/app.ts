@@ -1,19 +1,42 @@
+import events from "node:events";
+import type { OAuthClient } from "@atproto/oauth-client-node";
 import cors from "cors";
-import type { Express } from "express";
-import express from "express";
+import express, { type Express } from "express";
+import { createClient } from "./atproto/client";
+import {
+	type BidirectionalResolver,
+	createBidirectionalResolver,
+	createIdResolver,
+} from "./atproto/id-resolver";
 import logger from "./config/logger";
 import errorHandler from "./middleware/errorHandler";
-import Routes from "./routes";
+import { createRouter } from "./routes";
+
+export type AppContext = {
+	oauthClient: OAuthClient;
+	resolver: BidirectionalResolver;
+};
 
 export class Server {
-	private app: Express;
-	private port: string | number;
+	constructor(
+		public app: express.Application,
+		public ctx: AppContext,
+	) {}
 
-	// TODO: ADD RATE LIMITER!
-	constructor() {
-		this.app = express();
-		this.port = process.env.PORT || 8080;
-		this.app.use(
+	static async create() {
+		// Create atproto utilities
+		const oauthClient = await createClient();
+		const baseIdResolver = createIdResolver();
+		const resolver = createBidirectionalResolver(baseIdResolver);
+		const ctx = { oauthClient, resolver };
+
+		// Create server
+		const app: Express = express();
+		app.set("trust proxy", true);
+
+		// Set up routes and middleware
+		const router = createRouter(ctx);
+		app.use(
 			cors({
 				origin: ["http://localhost:8081"],
 				credentials: true,
@@ -21,36 +44,30 @@ export class Server {
 				allowedHeaders: ["Content-Type", "Authorization"],
 			}),
 		);
-		this.configureMiddleware();
-		this.configureRoutes();
-		this.configureErrorHandling();
-	}
+		app.use(express.json());
+		app.use(express.urlencoded({ extended: true }));
+		app.use(errorHandler);
+		app.use(router);
 
-	private configureMiddleware(): void {
-		this.app.use(express.json());
-		this.app.use(express.urlencoded({ extended: true }));
-	}
-
-	private configureRoutes(): void {
-		new Routes(this.app);
-	}
-
-	private configureErrorHandling(): void {
-		this.app.use(errorHandler);
-	}
-
-	public async start(): Promise<void> {
-		try {
-			this.app.listen(this.port, () => {
-				logger.info(`Server is running on port ${this.port}`);
-			});
-		} catch (error) {
-			logger.error("Error starting server:", error);
-			process.exit(1);
-		}
-	}
-
-	public getApp(): Express {
-		return this.app;
+		// Bind server to the port
+		const server = app.listen(process.env.PORT);
+		await events.once(server, "listening");
+		logger.info(
+			`Server (${process.env.NODE_ENV}) running on port http://localhost:${process.env.PORT}`,
+		);
+		return new Server(app, ctx);
 	}
 }
+const run = async () => {
+	const server = await Server.create();
+
+	const onCloseSignal = async () => {
+		setTimeout(() => process.exit(1), 10000).unref();
+		process.exit();
+	};
+
+	process.on("SIGINT", onCloseSignal);
+	process.on("SIGTERM", onCloseSignal);
+};
+
+run();
