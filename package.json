@@ -1,10 +1,10 @@
 {
 	"name": "book-kin-api",
-	"module": "index.ts",
+	"module": "app.ts",
+	"license": "MIT",
 	"type": "module",
 	"scripts": {
-		"dev": "bun run ./src/app.ts --watch",
-		"debug": "bun run --inspect-brk ./src/app.ts --watch"
+		"dev": "tsx watch --clear-screen=false ./src/app.ts"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",
@@ -23,6 +23,15 @@
 		"async-mutex": "^0.5.0",
 		"dotenv": "^16.4.7",
 		"express": "^4.21.2",
-		"winston": "^3.17.0"
+		"winston": "^3.17.0",
+		"ts-node": "^10.9.2",
+		"tsup": "^8.0.2",
+		"tsx": "^4.7.2"
+	},
+	"tsup": {
+		"entry": ["src", "!src/**/__tests__/**", "!src/**/*.test.*"],
+		"splitting": false,
+		"sourcemap": true,
+		"clean": true
 	}
 }

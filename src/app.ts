@@ -1,6 +1,7 @@
 import events from "node:events";
 import type { OAuthClient } from "@atproto/oauth-client-node";
 import cors from "cors";
+import dotenv from "dotenv";
 import express, { type Express } from "express";
 import { createClient } from "./atproto/client";
 import {
@@ -11,6 +12,7 @@ import {
 import logger from "./config/logger";
 import errorHandler from "./middleware/errorHandler";
 import { createRouter } from "./routes";
+dotenv.config();
 
 export type AppContext = {
 	oauthClient: OAuthClient;
