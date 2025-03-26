@@ -39,8 +39,6 @@ export const createRouter = (ctx: AppContext) => {
 		handler(async (req, res) => {
 			const params = new URLSearchParams(req.originalUrl.split("?")[1]);
 			try {
-				const params = new URLSearchParams(req.url);
-
 				const result = await ctx.oauthClient.callback(params);
 				if (!result || !result.session) {
 					res.status(400).json({ message: "Authentication failed." });
