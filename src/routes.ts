@@ -1,6 +1,9 @@
+import { Agent } from "@atproto/api";
+import type { OAuthSession } from "@atproto/oauth-client-node";
 import { isValidHandle } from "@atproto/syntax";
 import express from "express";
 import type { AppContext } from "./app";
+import { decrypt, encrypt } from "./auth/crypto";
 import logger from "./config/logger";
 
 const handler =
@@ -22,6 +25,17 @@ const handler =
 			next(err);
 		}
 	};
+
+const getSessionAgent = async (sessionData: OAuthSession, ctx: AppContext) => {
+	if (!sessionData.did) return null;
+	try {
+		const oauthsession = await ctx.oauthClient.restore(sessionData.did);
+		return oauthsession ? new Agent(oauthsession) : null;
+	} catch (error) {
+		logger.warn("oauth restore failed", { error });
+		return null;
+	}
+};
 
 export const createRouter = (ctx: AppContext) => {
 	const router = express.Router();
@@ -51,7 +65,9 @@ export const createRouter = (ctx: AppContext) => {
 					return;
 				}
 
-				const sessionParam = encodeURIComponent(JSON.stringify(session));
+				const sessionString = JSON.stringify(session);
+				const encryptedSession = encrypt(sessionString);
+				const sessionParam = encodeURIComponent(encryptedSession);
 				res.redirect(`${deepLink}?session=${sessionParam}`);
 			} catch (error) {
 				logger.error(error);
@@ -86,6 +102,43 @@ export const createRouter = (ctx: AppContext) => {
 					error: error instanceof Error ? error.message : "Unknown error",
 				});
 			}
+		}),
+	);
+
+	router.get(
+		"/profile",
+		handler(async (req, res) => {
+			// TODO: create helper function for getting session Data
+			try {
+				const authHeader = req.headers.authorization;
+				if (!authHeader || !authHeader.startsWith("Bearer ")) {
+					logger.error("profile: Missing bearer token");
+					res.status(401).json({ message: "No session data" });
+					return;
+				}
+				const encryptedSession = authHeader.split(" ")[1];
+				if (!encryptedSession) {
+					logger.error("profile: Invalid session format");
+					res.status(401).json({ message: "Invalid session format" });
+					return;
+				}
+
+				const decryptedSession = decrypt(decodeURIComponent(encryptedSession));
+				const session = JSON.parse(decryptedSession) as OAuthSession;
+				const agent = await getSessionAgent(session, ctx);
+				if (!agent) {
+					res
+						.status(500)
+						.json({ message: "profile: Failed to decrypt session data" });
+					return;
+				}
+				if (!agent.did) {
+					res.status(400).json({ message: "profile: DID not found" });
+					return;
+				}
+				const profile = await agent.getProfile({ actor: agent.did });
+				res.status(200).json(profile);
+			} catch (error) {}
 		}),
 	);
 	return router;
