@@ -64,10 +64,13 @@ export const createRouter = (ctx: AppContext) => {
 					res.status(400).json({ message: "Deep link is required." });
 					return;
 				}
-
+				// TODO: Just encrypt and said DID
 				const sessionString = JSON.stringify(session);
+				logger.info("Session String", sessionString);
 				const encryptedSession = encrypt(sessionString);
+				logger.info("Encrypted Session", encryptedSession);
 				const sessionParam = encodeURIComponent(encryptedSession);
+				logger.info("Session Param", sessionParam);
 				res.redirect(`${deepLink}?session=${sessionParam}`);
 			} catch (error) {
 				logger.error(error);
