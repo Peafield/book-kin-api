@@ -2,6 +2,7 @@ import { Agent } from "@atproto/api";
 import type { OAuthSession } from "@atproto/oauth-client-node";
 import { isValidHandle } from "@atproto/syntax";
 import express from "express";
+import jwt from "jsonwebtoken";
 import type { AppContext } from "./app";
 import { decrypt, encrypt } from "./auth/crypto";
 import logger from "./config/logger";
@@ -64,14 +65,15 @@ export const createRouter = (ctx: AppContext) => {
 					res.status(400).json({ message: "Deep link is required." });
 					return;
 				}
-				// TODO: Just encrypt and said DID
-				const sessionString = JSON.stringify(session);
-				logger.info("Session String", sessionString);
-				const encryptedSession = encrypt(sessionString);
-				logger.info("Encrypted Session", encryptedSession);
-				const sessionParam = encodeURIComponent(encryptedSession);
-				logger.info("Session Param", sessionParam);
-				res.redirect(`${deepLink}?session=${sessionParam}`);
+
+				const sessionToken = jwt.sign(
+					{ did: session.did },
+					process.env.JWT_SECRET || "secret",
+					{ expiresIn: "2h" },
+				);
+
+				await sessionStorage.set(sessionToken, session);
+				res.status(200).redirect(`${deepLink}?token=${sessionToken}`);
 			} catch (error) {
 				logger.error(error);
 				res.status(500).json({ message: "Internal server error." });

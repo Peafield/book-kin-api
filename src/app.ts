@@ -19,6 +19,7 @@ export type AppContext = {
 	resolver: BidirectionalResolver;
 };
 
+// TODO: INIT REDIS
 export class Server {
 	constructor(
 		public app: express.Application,
@@ -40,7 +41,7 @@ export class Server {
 		const router = createRouter(ctx);
 		app.use(
 			cors({
-				origin: ["http://localhost:8081"],
+				origin: ["http://localhost:8081", "http://127.0.0.1:8081"],
 				credentials: true,
 				methods: ["GET", "POST"],
 				allowedHeaders: ["Content-Type", "Authorization"],

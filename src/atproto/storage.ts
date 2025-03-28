@@ -3,32 +3,50 @@ import type {
 	NodeSavedSessionStore,
 	NodeSavedState,
 	NodeSavedStateStore,
+	Session,
 } from "@atproto/oauth-client-node";
+import { redis } from "#/lib/redis";
+
+const PREFIX = "session:";
 
 export class StateStore implements NodeSavedStateStore {
-	private store: Record<string, NodeSavedState> = {};
-
 	async get(key: string): Promise<NodeSavedState | undefined> {
-		return this.store[key];
+		const result = await redis.get(`${PREFIX}${key}`);
+		if (!result) return undefined;
+		return JSON.parse(result) as NodeSavedState;
 	}
-	async set(key: string, val: NodeSavedState): Promise<void> {
-		this.store[key] = val;
+	async set(key: string, val: NodeSavedState) {
+		const state = JSON.stringify(val);
+		await redis.set(`${PREFIX}${key}`, JSON.stringify(state));
 	}
-	async del(key: string): Promise<void> {
-		delete this.store[key];
+	async del(key: string) {
+		await redis.del(`${PREFIX}${key}`);
 	}
 }
 
 export class SessionStore implements NodeSavedSessionStore {
-	private store: Record<string, NodeSavedSession> = {};
-
 	async get(key: string): Promise<NodeSavedSession | undefined> {
-		return this.store[key];
+		const result = await redis.get(`${PREFIX}${key}`);
+		if (!result) return;
+		return JSON.parse(result) as NodeSavedSession;
 	}
-	async set(key: string, session: NodeSavedSession): Promise<void> {
-		this.store[key] = session;
+	async set(key: string, val: NodeSavedSession) {
+		const session = JSON.stringify(val);
+		await redis.set(`${PREFIX}${key}`, JSON.stringify(session));
 	}
-	async del(key: string): Promise<void> {
-		delete this.store[key];
+	async del(key: string) {
+		await redis.del(`${PREFIX}${key}`);
 	}
 }
+
+export const tokenStore = {
+	async set(sessionToken: string, did: string) {
+		await redis.set(`${PREFIX}${sessionToken}`, did, "EX", 3600);
+	},
+	async get(sessionToken: string) {
+		return await redis.get(`${PREFIX}${sessionToken}`);
+	},
+	async del(sessionToken: string) {
+		await redis.del(`${PREFIX}${sessionToken}`);
+	},
+};
