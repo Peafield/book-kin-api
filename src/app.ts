@@ -1,3 +1,4 @@
+import { exec } from "node:child_process";
 import events from "node:events";
 import type { OAuthClient } from "@atproto/oauth-client-node";
 import cors from "cors";
@@ -10,6 +11,7 @@ import {
 	createIdResolver,
 } from "./atproto/id-resolver";
 import logger from "./config/logger";
+import { redis } from "./lib/redis";
 import errorHandler from "./middleware/errorHandler";
 import { createRouter } from "./routes";
 dotenv.config();
@@ -19,7 +21,6 @@ export type AppContext = {
 	resolver: BidirectionalResolver;
 };
 
-// TODO: INIT REDIS
 export class Server {
 	constructor(
 		public app: express.Application,
@@ -27,6 +28,15 @@ export class Server {
 	) {}
 
 	static async create() {
+		// Connect to Redis
+		try {
+			await redis.connect();
+			await redis.ping();
+			logger.info("Connected to Redis");
+		} catch (error) {
+			logger.error("Failed to connect to Redis", error);
+			process.exit(1);
+		}
 		// Create atproto utilities
 		const oauthClient = await createClient();
 		const baseIdResolver = createIdResolver();
@@ -66,11 +76,32 @@ const run = async () => {
 
 	const onCloseSignal = async () => {
 		setTimeout(() => process.exit(1), 10000).unref();
+		await redis.quit();
 		process.exit();
 	};
 
 	process.on("SIGINT", onCloseSignal);
 	process.on("SIGTERM", onCloseSignal);
+	process.on("SIGUSR2", async () => {
+		logger.info("Restarting server...");
+		await new Promise<void>((resolve, reject) => {
+			exec(
+				"redis-cli -h localhost -p 6379 CLIENT KILL TYPE normal",
+				(error) => {
+					if (error) {
+						logger.error("Error killing Redis connections:", error);
+						reject(error);
+					} else {
+						logger.info("Killed all Redis connections");
+						resolve();
+					}
+				},
+			);
+		});
+		await redis.quit();
+		redis.on("end", () => {
+			process.kill(process.pid, "SIGUSR2");
+		});
+	});
 };
-
 run();

@@ -176,3 +176,6 @@ dist
 
 # Error Log
 error.log
+
+# Docs
+ATPROTO_OAUTH.MD

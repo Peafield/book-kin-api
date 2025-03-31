@@ -4,7 +4,7 @@ import { isValidHandle } from "@atproto/syntax";
 import express from "express";
 import jwt from "jsonwebtoken";
 import type { AppContext } from "./app";
-import { decrypt, encrypt } from "./auth/crypto";
+import { decrypt } from "./auth/crypto";
 import logger from "./config/logger";
 
 const handler =
@@ -72,7 +72,6 @@ export const createRouter = (ctx: AppContext) => {
 					{ expiresIn: "2h" },
 				);
 
-				await sessionStorage.set(sessionToken, session);
 				res.status(200).redirect(`${deepLink}?token=${sessionToken}`);
 			} catch (error) {
 				logger.error(error);
@@ -113,7 +112,6 @@ export const createRouter = (ctx: AppContext) => {
 	router.get(
 		"/profile",
 		handler(async (req, res) => {
-			// TODO: create helper function for getting session Data
 			try {
 				const authHeader = req.headers.authorization;
 				if (!authHeader || !authHeader.startsWith("Bearer ")) {

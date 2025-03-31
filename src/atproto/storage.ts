@@ -3,7 +3,6 @@ import type {
 	NodeSavedSessionStore,
 	NodeSavedState,
 	NodeSavedStateStore,
-	Session,
 } from "@atproto/oauth-client-node";
 import { redis } from "#/lib/redis";
 
