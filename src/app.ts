@@ -30,7 +30,6 @@ export class Server {
 	static async create() {
 		// Connect to Redis
 		try {
-			await redis.connect();
 			await redis.ping();
 			logger.info("Connected to Redis");
 		} catch (error) {
